@@ -1,533 +1,974 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>APK SHARE</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Admin-only APK uploader with permanent download links." />
+<title>APK Uploader — Admin Only</title>
 <style>
-*{
-  box-sizing:border-box;
-  margin:0;
-  padding:0;
-}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: linear-gradient(135deg, #eef3fa 0%, #e3ecf8 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+    color: #0b1e33;
+  }
+  .container {
+    max-width: 720px;
+    width: 100%;
+  }
+  .card {
+    background: #ffffff;
+    border-radius: 28px;
+    box-shadow: 0 24px 48px -16px rgba(0, 30, 60, 0.18),
+                0 4px 12px -4px rgba(0, 30, 60, 0.08);
+    padding: 2.2rem 2rem;
+    margin-bottom: 1.5rem;
+  }
+  header {
+    margin-bottom: 1.8rem;
+  }
+  h1 {
+    font-size: 1.85rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #0b1e33;
+    margin-bottom: 0.4rem;
+  }
+  h1 .emoji { font-size: 1.6rem; }
+  h1 .badge {
+    background: #eef3ff;
+    color: #1f4f8f;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.3rem 0.8rem;
+    border-radius: 40px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .subhead {
+    color: #4b5e71;
+    font-size: 1rem;
+    border-left: 4px solid #a0c0e8;
+    padding-left: 0.9rem;
+    line-height: 1.5;
+  }
 
-body{
-  font-family:Arial, sans-serif;
-  background:#f1f4f8;
-  color:#111;
-}
+  /* ---- Sections ---- */
+  .section {
+    background: #f6f9fe;
+    border: 1px solid #dde8f4;
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-bottom: 1.2rem;
+    transition: all 0.2s ease;
+  }
+  .section:last-child { margin-bottom: 0; }
+  .section-title {
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #1f4f8f;
+    margin-bottom: 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 
-header{
-  background:linear-gradient(135deg,#061b45,#0757c9);
-  color:white;
-  padding:22px 15px;
-  text-align:center;
-}
+  /* ---- Inputs ---- */
+  input[type="password"] {
+    width: 100%;
+    padding: 0.9rem 1.2rem;
+    border: 2px solid #cfddee;
+    border-radius: 60px;
+    font-size: 1rem;
+    background: #fff;
+    outline: none;
+    transition: 0.15s;
+    font-family: inherit;
+    color: #0b1e33;
+  }
+  input[type="password"]:focus {
+    border-color: #2b6ed7;
+    box-shadow: 0 0 0 4px rgba(43, 110, 215, 0.15);
+  }
+  input[type="password"].error {
+    border-color: #d84c4c;
+    background: #fff6f6;
+  }
+  input[type="password"]:disabled {
+    background: #f1f5fa;
+    color: #6b7d90;
+    cursor: not-allowed;
+  }
 
-header h1{
-  font-size:30px;
-}
+  /* ---- Buttons ---- */
+  .btn {
+    background: #1f4f8f;
+    color: #fff;
+    border: none;
+    padding: 0.9rem 1.8rem;
+    border-radius: 60px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .btn:hover:not(:disabled) { background: #123b6e; transform: translateY(-1px); }
+  .btn:active:not(:disabled) { transform: translateY(0); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-block { width: 100%; }
+  .btn-secondary {
+    background: #fff;
+    color: #1f4f8f;
+    border: 2px solid #cfddee;
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: #eef3ff;
+    border-color: #a0b8d4;
+  }
+  .btn-danger {
+    background: #ffe5e5;
+    color: #b12b2b;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.8rem;
+  }
+  .btn-danger:hover:not(:disabled) { background: #ffcfcf; }
 
-header p{
-  margin-top:7px;
-  opacity:.9;
-}
+  .input-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .input-row input { flex: 1 1 220px; }
 
-.container{
-  max-width:700px;
-  margin:35px auto;
-  padding:0 15px;
-}
+  /* ---- Upload area ---- */
+  .upload-area {
+    background: #fafcff;
+    border: 2px dashed #b8cee8;
+    border-radius: 20px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    transition: 0.2s;
+    margin-top: 0.8rem;
+  }
+  .upload-area.disabled {
+    opacity: 0.55;
+    pointer-events: none;
+    filter: grayscale(0.5);
+  }
+  .upload-area.dragover {
+    border-color: #2b6ed7;
+    background: #eef5ff;
+  }
+  .upload-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.4rem;
+    line-height: 1;
+  }
+  .upload-title {
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: #0b1e33;
+    margin-bottom: 0.2rem;
+  }
+  .upload-hint {
+    font-size: 0.85rem;
+    color: #6b7d90;
+    margin-bottom: 1rem;
+  }
+  .file-label {
+    display: inline-block;
+    background: #e5efff;
+    color: #1f4f8f;
+    font-weight: 600;
+    padding: 0.75rem 1.8rem;
+    border-radius: 60px;
+    cursor: pointer;
+    border: 1px solid #c2d6f0;
+    transition: 0.15s;
+    font-size: 0.95rem;
+  }
+  .file-label:hover { background: #d4e4ff; }
+  input[type="file"] { display: none; }
 
-.card{
-  background:white;
-  border-radius:15px;
-  padding:25px;
-  box-shadow:0 5px 25px rgba(0,0,0,.08);
-}
+  .file-name {
+    font-size: 0.9rem;
+    color: #1d3a5c;
+    margin-top: 0.9rem;
+    font-weight: 500;
+    word-break: break-all;
+    min-height: 1.2rem;
+  }
 
-h2{
-  margin-bottom:20px;
-  color:#06245d;
-}
+  /* ---- Status messages ---- */
+  .status {
+    font-size: 0.9rem;
+    margin-top: 0.7rem;
+    min-height: 1.3rem;
+    font-weight: 500;
+    color: #2e6b3e;
+    transition: 0.15s;
+  }
+  .status.error { color: #c0392b; }
+  .status.info { color: #1f4f8f; }
+  .status.ok { color: #2e6b3e; }
+  .status:empty { display: none; }
 
-.upload-box{
-  border:2px dashed #0757c9;
-  border-radius:12px;
-  padding:35px 20px;
-  text-align:center;
-  background:#f7faff;
-}
+  /* ---- Link box ---- */
+  .link-box {
+    background: linear-gradient(135deg, #eef5ff 0%, #e3edff 100%);
+    border-left: 6px solid #2b6ed7;
+    border-radius: 20px;
+    padding: 1.4rem 1.5rem;
+    display: none;
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .link-box .section-title { color: #1f4f8f; }
+  .link-url {
+    background: #fff;
+    padding: 0.8rem 1.1rem;
+    border-radius: 40px;
+    border: 1px solid #cbdae9;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .link-url a {
+    color: #0a3d7a;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.92rem;
+    flex: 1 1 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .link-url a:hover { text-decoration: underline; }
+  .copy-btn {
+    background: #1f4f8f;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1.1rem;
+    border-radius: 30px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.15s;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .copy-btn:hover { background: #123b6e; }
+  .copy-btn.copied { background: #2e6b3e; }
 
-.upload-box input{
-  margin-top:20px;
-  width:100%;
-}
+  /* ---- File list ---- */
+  .file-list { display: none; }
+  .file-items { margin-top: 0.4rem; }
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.7rem 0.9rem;
+    background: #fff;
+    border: 1px solid #dbe7f3;
+    border-radius: 14px;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    transition: 0.15s;
+  }
+  .file-item:hover { border-color: #b8cee8; }
+  .file-item .file-link {
+    flex: 1;
+    color: #1f4f8f;
+    text-decoration: none;
+    font-weight: 500;
+    word-break: break-all;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .file-item .file-link:hover { text-decoration: underline; }
+  .file-item .file-size {
+    color: #6b7d90;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+  .empty-state {
+    text-align: center;
+    color: #8a9eb0;
+    font-size: 0.88rem;
+    padding: 0.8rem;
+  }
 
-button{
-  border:none;
-  border-radius:8px;
-  padding:13px 18px;
-  cursor:pointer;
-  font-weight:bold;
-  font-size:15px;
-}
+  /* ---- Footer ---- */
+  footer {
+    text-align: center;
+    font-size: 0.78rem;
+    color: #8a9eb0;
+    padding: 0.5rem;
+  }
 
-.upload-btn{
-  background:#0757c9;
-  color:white;
-  width:100%;
-  margin-top:20px;
-}
+  /* ---- Toast ---- */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #0b1e33;
+    color: #fff;
+    padding: 0.8rem 1.4rem;
+    border-radius: 40px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 9999;
+    pointer-events: none;
+  }
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  .toast.error { background: #c0392b; }
+  .toast.success { background: #2e6b3e; }
 
-.upload-btn:hover{
-  background:#0648a8;
-}
+  /* ---- Progress ---- */
+  .progress {
+    height: 6px;
+    background: #e3ecf8;
+    border-radius: 40px;
+    overflow: hidden;
+    margin-top: 0.8rem;
+    display: none;
+  }
+  .progress.show { display: block; }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #2b6ed7, #4a90e2);
+    width: 0%;
+    transition: width 0.2s ease;
+    border-radius: 40px;
+  }
 
-button:disabled{
-  opacity:.5;
-  cursor:not-allowed;
-}
-
-#status{
-  margin-top:18px;
-  padding:12px;
-  border-radius:8px;
-  display:none;
-}
-
-.success{
-  background:#e8f8ee;
-  color:#147a38;
-}
-
-.error{
-  background:#ffeaea;
-  color:#b00020;
-}
-
-.result{
-  display:none;
-  margin-top:25px;
-  padding:20px;
-  background:#f4f8ff;
-  border-radius:12px;
-}
-
-.result input{
-  width:100%;
-  padding:12px;
-  border:1px solid #ccc;
-  border-radius:7px;
-  margin:10px 0;
-}
-
-.copy-btn{
-  background:#e50914;
-  color:white;
-  width:100%;
-}
-
-.download-btn{
-  display:block;
-  text-align:center;
-  text-decoration:none;
-  background:#0757c9;
-  color:white;
-  padding:13px;
-  border-radius:8px;
-  margin-top:10px;
-}
-
-.file-info{
-  margin-top:15px;
-  line-height:1.8;
-}
-
-footer{
-  text-align:center;
-  padding:30px 15px;
-  color:#666;
-  font-size:14px;
-}
+  /* ---- Responsive ---- */
+  @media (max-width: 500px) {
+    body { padding: 1rem 0.6rem; }
+    .card { padding: 1.6rem 1.3rem; border-radius: 22px; }
+    h1 { font-size: 1.4rem; }
+    h1 .emoji { font-size: 1.3rem; }
+    h1 .badge { font-size: 0.65rem; padding: 0.25rem 0.6rem; }
+    .subhead { font-size: 0.9rem; }
+    .input-row { flex-direction: column; }
+    .input-row input { width: 100%; }
+    .input-row .btn { width: 100%; }
+    .link-url { flex-direction: column; align-items: stretch; }
+    .link-url .copy-btn { width: 100%; }
+    .file-item { flex-wrap: wrap; }
+  }
 </style>
 </head>
-
 <body>
-
-<header>
-  <h1>📱 APK SHARE</h1>
-  <p>Upload and share your APK easily</p>
-</header>
-
 <div class="container">
 
+  <!-- ===== MAIN CARD ===== -->
   <div class="card">
+    <header>
+      <h1>
+        <span class="emoji">📦</span>
+        APK Uploader
+        <span class="badge">Admin</span>
+      </h1>
+      <div class="subhead">
+        Only the administrator can upload. Anyone with the link can download.
+      </div>
+    </header>
 
-    <h2>Upload APK</h2>
-
-    <div class="upload-box">
-
-      <strong>Select your APK file</strong>
-
-      <p style="margin-top:8px;color:#666;">
-        Only .apk files are accepted
-      </p>
-
-      <input
-        type="file"
-        id="apkFile"
-        accept=".apk,application/vnd.android.package-archive"
-      >
-
+    <!-- ===== 1. PASSWORD SECTION ===== -->
+    <div class="section">
+      <div class="section-title">🔐 Admin access</div>
+      <div class="input-row">
+        <input
+          type="password"
+          id="pwd"
+          placeholder="Enter admin password"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="btn" id="unlockBtn">Unlock</button>
+        <button class="btn btn-secondary" id="lockBtn" style="display:none;">🔒 Lock</button>
+      </div>
+      <div id="pwdStatus" class="status"></div>
     </div>
 
-    <button
-      class="upload-btn"
-      id="uploadBtn"
-      onclick="uploadAPK()"
-    >
-      Upload APK
-    </button>
+    <!-- ===== 2. UPLOAD SECTION ===== -->
+    <div class="section" id="uploadSection">
+      <div class="section-title">📱 Upload APK</div>
 
-    <div id="status"></div>
+      <div class="upload-area disabled" id="uploadArea">
+        <div class="upload-icon">📱</div>
+        <div class="upload-title">Select an APK file</div>
+        <div class="upload-hint">Only .apk files • max 500 MB</div>
 
-    <div class="result" id="result">
+        <label class="file-label" for="fileInput">Choose APK</label>
+        <input
+          type="file"
+          id="fileInput"
+          accept=".apk,application/vnd.android.package-archive"
+          disabled
+        />
 
-      <h2 style="font-size:21px;">
-        APK uploaded successfully
-      </h2>
-
-      <div class="file-info">
-        <strong>Name:</strong>
-        <span id="fileName"></span>
-        <br>
-
-        <strong>Size:</strong>
-        <span id="fileSize"></span>
+        <div class="file-name" id="fileName"></div>
       </div>
 
-      <p style="margin-top:15px;">
-        Share this link:
-      </p>
-
-      <input
-        type="text"
-        id="shareLink"
-        readonly
-      >
-
       <button
-        class="copy-btn"
-        onclick="copyLink()"
+        class="btn btn-block"
+        id="uploadBtn"
+        disabled
+        style="margin-top:1rem;"
       >
-        📋 Copy Shareable Link
+        ⬆️ Upload &amp; get link
       </button>
 
-      <a
-        id="downloadLink"
-        class="download-btn"
-        target="_blank"
-      >
-        📥 Open Download Link
-      </a>
+      <div class="progress" id="progress">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
 
+      <div id="uploadStatus" class="status"></div>
+    </div>
+
+    <!-- ===== 3. RESULT LINK SECTION ===== -->
+    <div class="link-box" id="linkBox">
+      <div class="section-title">✅ Download link ready</div>
+      <div class="link-url">
+        <a id="dlLink" href="#" target="_blank" rel="noopener">https://...</a>
+        <button class="copy-btn" id="copyBtn">Copy</button>
+      </div>
+      <div class="status ok" style="margin-top:0.6rem;">
+        Share this link — anyone can download the APK.
+      </div>
+    </div>
+
+    <!-- ===== 4. FILE LIST SECTION ===== -->
+    <div class="section file-list" id="fileListSection">
+      <div class="section-title">
+        📂 Uploaded APKs
+        <button
+          class="btn btn-secondary"
+          id="refreshBtn"
+          style="margin-left:auto;padding:0.35rem 0.9rem;font-size:0.75rem;"
+        >↻ Refresh</button>
+      </div>
+      <div class="file-items" id="fileItems"></div>
     </div>
 
   </div>
 
+  <footer>
+    Built for Render • Files stored on Cloudflare R2
+  </footer>
 </div>
 
-<footer>
-  APK SHARE © 2026
-</footer>
-
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
 <script>
+(function () {
+  'use strict';
 
-/* ==========================================
-   SUPABASE CONFIGURATION
-   ========================================== */
+  // ============================================================
+  // CONFIG
+  // ============================================================
+  // NOTE: This password only unlocks the UI.
+  // The server independently verifies it on every upload/delete.
+  // Change this to match your server's ADMIN_PASSWORD if different.
+  const ADMIN_PASSWORD = '123j';
 
-const SUPABASE_URL = "TON_SUPABASE_URL";
+  // ============================================================
+  // DOM HELPERS
+  // ============================================================
+  const $ = (id) => document.getElementById(id);
 
-const SUPABASE_ANON_KEY =
-"TON_SUPABASE_ANON_KEY";
+  const pwdInput      = $('pwd');
+  const unlockBtn     = $('unlockBtn');
+  const lockBtn       = $('lockBtn');
+  const pwdStatus     = $('pwdStatus');
 
+  const uploadArea    = $('uploadArea');
+  const fileInput     = $('fileInput');
+  const fileNameEl    = $('fileName');
+  const uploadBtn     = $('uploadBtn');
+  const uploadStatus  = $('uploadStatus');
+  const progress      = $('progress');
+  const progressBar   = $('progressBar');
 
-const supabaseClient =
-  window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-  );
+  const linkBox       = $('linkBox');
+  const dlLink        = $('dlLink');
+  const copyBtn       = $('copyBtn');
 
+  const fileListSection = $('fileListSection');
+  const fileItems       = $('fileItems');
+  const refreshBtn      = $('refreshBtn');
 
-/* ==========================================
-   UPLOAD APK
-   ========================================== */
+  const toastEl = $('toast');
 
-async function uploadAPK(){
+  // ============================================================
+  // STATE
+  // ============================================================
+  let unlocked = false;
+  let selectedFile = null;
 
-  const fileInput =
-    document.getElementById("apkFile");
-
-  const uploadButton =
-    document.getElementById("uploadBtn");
-
-  const status =
-    document.getElementById("status");
-
-  const result =
-    document.getElementById("result");
-
-  const file =
-    fileInput.files[0];
-
-
-  result.style.display = "none";
-
-
-  if(!file){
-
-    showStatus(
-      "Please select an APK file.",
-      "error"
-    );
-
-    return;
+  // ============================================================
+  // TOAST
+  // ============================================================
+  let toastTimer = null;
+  function showToast(msg, type = '') {
+    toastEl.textContent = msg;
+    toastEl.className = 'toast show ' + type;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toastEl.classList.remove('show');
+    }, 2500);
   }
 
-
-  /* Check APK */
-
-  if(
-    !file.name.toLowerCase().endsWith(".apk")
-  ){
-
-    showStatus(
-      "Only APK files are allowed.",
-      "error"
-    );
-
-    return;
+  // ============================================================
+  // STATUS HELPERS
+  // ============================================================
+  function setStatus(el, msg, type = '') {
+    el.textContent = msg;
+    el.className = 'status ' + type;
   }
 
+  // ============================================================
+  // UNLOCK / LOCK
+  // ============================================================
+  function unlock() {
+    const entered = pwdInput.value.trim();
 
-  uploadButton.disabled = true;
-
-  uploadButton.innerText =
-    "Uploading...";
-
-
-  showStatus(
-    "Uploading your APK...",
-    "success"
-  );
-
-
-  try{
-
-    /*
-      Create a unique filename
-      to avoid replacing another APK.
-    */
-
-    const random =
-      Math.random()
-      .toString(36)
-      .substring(2,10);
-
-    const safeName =
-      file.name
-      .replace(/[^a-zA-Z0-9._-]/g,"_");
-
-    const filePath =
-      Date.now() +
-      "_" +
-      random +
-      "_" +
-      safeName;
-
-
-    /* Upload */
-
-    const { data, error } =
-      await supabaseClient
-      .storage
-      .from("apk-files")
-      .upload(
-        filePath,
-        file,
-        {
-          cacheControl:"3600",
-          upsert:false,
-          contentType:
-            "application/vnd.android.package-archive"
-        }
+    if (entered !== ADMIN_PASSWORD) {
+      pwdInput.classList.add('error');
+      setStatus(pwdStatus, '❌ Wrong password. Try again.', 'error');
+      // shake animation
+      pwdInput.animate(
+        [
+          { transform: 'translateX(0)' },
+          { transform: 'translateX(-6px)' },
+          { transform: 'translateX(6px)' },
+          { transform: 'translateX(-4px)' },
+          { transform: 'translateX(4px)' },
+          { transform: 'translateX(0)' }
+        ],
+        { duration: 320, easing: 'ease-in-out' }
       );
-
-
-    if(error){
-      throw error;
+      return;
     }
 
+    unlocked = true;
+    pwdInput.classList.remove('error');
+    pwdInput.disabled = true;
 
-    /* Get public URL */
+    unlockBtn.style.display = 'none';
+    lockBtn.style.display   = 'inline-flex';
 
-    const { data:urlData } =
-      supabaseClient
-      .storage
-      .from("apk-files")
-      .getPublicUrl(filePath);
+    setStatus(pwdStatus, '✅ Unlocked — admin mode active.', 'ok');
 
+    // Enable upload area
+    uploadArea.classList.remove('disabled');
+    fileInput.disabled = false;
 
-    const publicURL =
-      urlData.publicUrl;
+    // Refresh file list to show delete buttons
+    loadFiles();
 
-
-    /* Show result */
-
-    document.getElementById("fileName")
-      .innerText = file.name;
-
-
-    document.getElementById("fileSize")
-      .innerText = formatSize(file.size);
-
-
-    document.getElementById("shareLink")
-      .value = publicURL;
-
-
-    document.getElementById("downloadLink")
-      .href = publicURL;
-
-
-    result.style.display = "block";
-
-
-    showStatus(
-      "APK uploaded successfully!",
-      "success"
-    );
-
-
-  }catch(error){
-
-    console.error(error);
-
-    showStatus(
-      "Upload error: " + error.message,
-      "error"
-    );
-
+    showToast('Admin mode unlocked', 'success');
   }
 
+  function lock() {
+    unlocked = false;
+    selectedFile = null;
 
-  uploadButton.disabled = false;
+    pwdInput.value = '';
+    pwdInput.disabled = false;
+    pwdInput.classList.remove('error');
 
-  uploadButton.innerText =
-    "Upload APK";
-}
+    unlockBtn.style.display = 'inline-flex';
+    lockBtn.style.display   = 'none';
 
+    setStatus(pwdStatus, '🔒 Locked. Enter password to unlock.', '');
 
-/* ==========================================
-   COPY LINK
-   ========================================== */
+    // Disable upload area
+    uploadArea.classList.add('disabled');
+    fileInput.disabled = true;
+    fileInput.value = '';
+    fileNameEl.textContent = '';
+    uploadBtn.disabled = true;
+    setStatus(uploadStatus, '', '');
+    progress.classList.remove('show');
+    progressBar.style.width = '0%';
 
-async function copyLink(){
+    // Refresh file list to hide delete buttons
+    loadFiles();
 
-  const link =
-    document.getElementById("shareLink").value;
-
-
-  try{
-
-    await navigator.clipboard.writeText(link);
-
-    showStatus(
-      "Shareable link copied!",
-      "success"
-    );
-
-  }catch(error){
-
-    const input =
-      document.getElementById("shareLink");
-
-    input.select();
-
-    document.execCommand("copy");
-
-    showStatus(
-      "Shareable link copied!",
-      "success"
-    );
-  }
-}
-
-
-/* ==========================================
-   FILE SIZE
-   ========================================== */
-
-function formatSize(bytes){
-
-  if(bytes === 0){
-    return "0 Bytes";
+    showToast('Locked');
   }
 
-  const sizes =
-    [
-      "Bytes",
-      "KB",
-      "MB",
-      "GB"
-    ];
+  unlockBtn.addEventListener('click', unlock);
 
-  const i =
-    Math.floor(
-      Math.log(bytes) /
-      Math.log(1024)
-    );
+  lockBtn.addEventListener('click', lock);
 
-  return (
-    parseFloat(
-      (bytes /
-      Math.pow(1024,i))
-      .toFixed(2)
-    )
-    +
-    " "
-    +
-    sizes[i]
-  );
-}
+  pwdInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); unlock(); }
+  });
 
+  // ============================================================
+  // FILE SELECTION
+  // ============================================================
+  function handleFile(file) {
+    if (!file) {
+      selectedFile = null;
+      fileNameEl.textContent = '';
+      uploadBtn.disabled = true;
+      return;
+    }
 
-/* ==========================================
-   STATUS MESSAGE
-   ========================================== */
+    // Validate extension
+    const name = file.name.toLowerCase();
+    const isApk = name.endsWith('.apk') ||
+                  file.type === 'application/vnd.android.package-archive';
 
-function showStatus(message,type){
+    if (!isApk) {
+      setStatus(uploadStatus, '❌ Only .apk files are allowed.', 'error');
+      fileInput.value = '';
+      selectedFile = null;
+      fileNameEl.textContent = '';
+      uploadBtn.disabled = true;
+      return;
+    }
 
-  const status =
-    document.getElementById("status");
+    // Validate size (500 MB)
+    const MAX = 500 * 1024 * 1024;
+    if (file.size > MAX) {
+      setStatus(uploadStatus, '❌ File too large (max 500 MB).', 'error');
+      fileInput.value = '';
+      selectedFile = null;
+      fileNameEl.textContent = '';
+      uploadBtn.disabled = true;
+      return;
+    }
 
-  status.innerText =
-    message;
+    selectedFile = file;
+    fileNameEl.textContent = `📎 ${file.name} (${formatSize(file.size)})`;
+    uploadBtn.disabled = false;
+    setStatus(uploadStatus, '', '');
+  }
 
-  status.className = type;
+  fileInput.addEventListener('change', (e) => {
+    handleFile(e.target.files[0]);
+  });
 
-  status.style.display =
-    "block";
-}
+  // ============================================================
+  // DRAG & DROP
+  // ============================================================
+  ['dragenter', 'dragover'].forEach((evt) => {
+    uploadArea.addEventListener(evt, (e) => {
+      if (!unlocked) return;
+      e.preventDefault();
+      e.stopPropagation();
+      uploadArea.classList.add('dragover');
+    });
+  });
 
+  ['dragleave', 'drop'].forEach((evt) => {
+    uploadArea.addEventListener(evt, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      uploadArea.classList.remove('dragover');
+    });
+  });
+
+  uploadArea.addEventListener('drop', (e) => {
+    if (!unlocked) return;
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      handleFile(file);
+      // Sync with the hidden input
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fileInput.files = dt.files;
+    }
+  });
+
+  // ============================================================
+  // UPLOAD
+  // ============================================================
+  uploadBtn.addEventListener('click', () => {
+    if (!unlocked) {
+      setStatus(uploadStatus, '❌ Admin access required.', 'error');
+      return;
+    }
+    if (!selectedFile) {
+      setStatus(uploadStatus, '❌ Please choose an APK file first.', 'error');
+      return;
+    }
+    doUpload(selectedFile);
+  });
+
+  function doUpload(file) {
+    const form = new FormData();
+    form.append('apk', file);
+
+    uploadBtn.disabled = true;
+    setStatus(uploadStatus, '⏳ Uploading…', 'info');
+    progress.classList.add('show');
+    progressBar.style.width = '0%';
+
+    const xhr = new XMLHttpRequest();
+
+    // Progress
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        progressBar.style.width = pct + '%';
+        setStatus(uploadStatus, `⏳ Uploading… ${pct}%`, 'info');
+      }
+    });
+
+    xhr.addEventListener('load', () => {
+      progressBar.style.width = '100%';
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        let data;
+        try { data = JSON.parse(xhr.responseText); }
+        catch { data = {}; }
+
+        if (data && data.url) {
+          // Show link
+          dlLink.href = data.url;
+          dlLink.textContent = data.url;
+          linkBox.style.display = 'block';
+          setStatus(uploadStatus, '✅ Upload complete!', 'ok');
+
+          // Scroll to link
+          linkBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+          // Reload file list
+          loadFiles();
+
+          // Reset file input
+          fileInput.value = '';
+          selectedFile = null;
+          fileNameEl.textContent = '';
+
+          showToast('Upload successful!', 'success');
+
+          // Copy link automatically
+          copyToClipboard(data.url, true);
+        } else {
+          setStatus(uploadStatus, '❌ Upload failed: invalid response.', 'error');
+        }
+      } else {
+        let errMsg = `HTTP ${xhr.status}`;
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (data && data.error) errMsg = data.error;
+        } catch {}
+        setStatus(uploadStatus, '❌ Upload failed: ' + errMsg, 'error');
+        showToast('Upload failed', 'error');
+      }
+
+      uploadBtn.disabled = false;
+      setTimeout(() => progress.classList.remove('show'), 800);
+    });
+
+    xhr.addEventListener('error', () => {
+      setStatus(uploadStatus, '❌ Network error during upload.', 'error');
+      uploadBtn.disabled = false;
+      progress.classList.remove('show');
+      showToast('Network error', 'error');
+    });
+
+    xhr.addEventListener('abort', () => {
+      setStatus(uploadStatus, '⚠️ Upload cancelled.', 'error');
+      uploadBtn.disabled = false;
+      progress.classList.remove('show');
+    });
+
+    // Send
+    xhr.open('POST', '/upload', true);
+    xhr.setRequestHeader('x-admin-password', pwdInput.value);
+    xhr.send(form);
+  }
+
+  // ============================================================
+  // COPY LINK
+  // ============================================================
+  function copyToClipboard(text, silent = false) {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => {
+        if (!silent) {
+          copyBtn.textContent = 'Copied!';
+          copyBtn.classList.add('copied');
+          setTimeout(() => {
+            copyBtn.textContent = 'Copy';
+            copyBtn.classList.remove('copied');
+          }, 1600);
+          showToast('Link copied!', 'success');
+        }
+      }).catch(() => fallbackCopy(text, silent));
+    } else {
+      fallbackCopy(text, silent);
+    }
+  }
+
+  function fallbackCopy(text, silent) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      if (!silent) {
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1600);
+        showToast('Link copied!', 'success');
+      }
+    } catch {
+      if (!silent) prompt('Copy this link manually:', text);
+    }
+    document.body.removeChild(ta);
+  }
+
+  copyBtn.addEventListener('click', () => {
+    if (dlLink.href && dlLink.href !== '#') {
+      copyToClipboard(dlLink.href);
+    }
+  });
+
+  // ============================================================
+  // LOAD FILE LIST
+  // ============================================================
+  async function loadFiles() {
+    try {
+      const res = await fetch('/files', { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to load');
+      const files = await res.json();
+
+      if (!Array.isArray(files) || files.length === 0) {
+        fileListSection.style.display = 'block';
+        fileItems.innerHTML = '<div class="empty-state">No APKs uploaded yet.</div>';
+        return;
+      }
+
+      fileListSection.style.display = 'block';
+      fileItems.innerHTML = '';
+
+      files.forEach((f) => {
+        const item = document.createElement('div');
+        item.className = 'file-item';
+
+        const a = document.createElement('a');
+        a.className = 'file-link';
+        a.href = f.url;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.textContent = f.name;
+        a.title = f.name;
+
+        const size = document.createElement('span');
+        size.className = 'file-size';
+        size.textContent = formatSize(f.size || 0);
+
+        item.appendChild(a);
+        item.appendChild(size);
+
+        if (unlocked) {
+          const del = document.createElement('button');
+          del.className = 'btn btn-danger';
+          del.textContent = 'Delete';
+          del.addEventListener('click', () => deleteFile(f.name));
+          item.appendChild(del);
+        }
+
+        fileItems.appendChild(item);
+      });
+    } catch (e) {
+      console.error('loadFiles error:', e);
+      fileListSection.style.display = 'block';
+      fileItems.innerHTML = '<div class="empty-state">Could not load file list.</div>';
+    }
+  }
+
+  refreshBtn.addEventListener('click', loadFiles);
+
+  // ============================================================
+  // DELETE FILE
+  // ============================================================
+  async function deleteFile(key) {
+    if (!unlocked) return;
+    if (!confirm(`Delete "${key}"?\nThis cannot be undone.`)) return;
+
+    try {
+      const res = await fetch('/delete/' + encodeURIComponent(key), {
+        method: 'DELETE',
+        headers: { 'x-admin-password': pwdInput.value }
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.success) {
+        showToast('Deleted', 'success');
+        loadFiles();
+      } else {
+        showToast('Delete failed: ' + (data.error || res.status), 'error');
+      }
+    } catch (e) {
+      showToast('Delete failed: ' + e.message, 'error');
+    }
+  }
+
+  // ============================================================
+  // UTILS
+  // ============================================================
+  function formatSize(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return (bytes / Math.pow(k, i)).toFixed(i === 0 ? 0 : 1) + ' ' + sizes[i];
+  }
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  function init() {
+    lock();          // start in locked state
+    loadFiles();     // show public file list
+  }
+
+  init();
+
+})();
 </script>
-
 </body>
 </html>
