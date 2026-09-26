@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>APK SHARE</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+body{
+  font-family:Arial, sans-serif;
+  background:#f1f4f8;
+  color:#111;
+}
+
+header{
+  background:linear-gradient(135deg,#061b45,#0757c9);
+  color:white;
+  padding:22px 15px;
+  text-align:center;
+}
+
+header h1{
+  font-size:30px;
+}
+
+header p{
+  margin-top:7px;
+  opacity:.9;
+}
+
+.container{
+  max-width:700px;
+  margin:35px auto;
+  padding:0 15px;
+}
+
+.card{
+  background:white;
+  border-radius:15px;
+  padding:25px;
+  box-shadow:0 5px 25px rgba(0,0,0,.08);
+}
+
+h2{
+  margin-bottom:20px;
+  color:#06245d;
+}
+
+.upload-box{
+  border:2px dashed #0757c9;
+  border-radius:12px;
+  padding:35px 20px;
+  text-align:center;
+  background:#f7faff;
+}
+
+.upload-box input{
+  margin-top:20px;
+  width:100%;
+}
+
+button{
+  border:none;
+  border-radius:8px;
+  padding:13px 18px;
+  cursor:pointer;
+  font-weight:bold;
+  font-size:15px;
+}
+
+.upload-btn{
+  background:#0757c9;
+  color:white;
+  width:100%;
+  margin-top:20px;
+}
+
+.upload-btn:hover{
+  background:#0648a8;
+}
+
+button:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
+
+#status{
+  margin-top:18px;
+  padding:12px;
+  border-radius:8px;
+  display:none;
+}
+
+.success{
+  background:#e8f8ee;
+  color:#147a38;
+}
+
+.error{
+  background:#ffeaea;
+  color:#b00020;
+}
+
+.result{
+  display:none;
+  margin-top:25px;
+  padding:20px;
+  background:#f4f8ff;
+  border-radius:12px;
+}
+
+.result input{
+  width:100%;
+  padding:12px;
+  border:1px solid #ccc;
+  border-radius:7px;
+  margin:10px 0;
+}
+
+.copy-btn{
+  background:#e50914;
+  color:white;
+  width:100%;
+}
+
+.download-btn{
+  display:block;
+  text-align:center;
+  text-decoration:none;
+  background:#0757c9;
+  color:white;
+  padding:13px;
+  border-radius:8px;
+  margin-top:10px;
+}
+
+.file-info{
+  margin-top:15px;
+  line-height:1.8;
+}
+
+footer{
+  text-align:center;
+  padding:30px 15px;
+  color:#666;
+  font-size:14px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>📱 APK SHARE</h1>
+  <p>Upload and share your APK easily</p>
+</header>
+
+<div class="container">
+
+  <div class="card">
+
+    <h2>Upload APK</h2>
+
+    <div class="upload-box">
+
+      <strong>Select your APK file</strong>
+
+      <p style="margin-top:8px;color:#666;">
+        Only .apk files are accepted
+      </p>
+
+      <input
+        type="file"
+        id="apkFile"
+        accept=".apk,application/vnd.android.package-archive"
+      >
+
+    </div>
+
+    <button
+      class="upload-btn"
+      id="uploadBtn"
+      onclick="uploadAPK()"
+    >
+      Upload APK
+    </button>
+
+    <div id="status"></div>
+
+    <div class="result" id="result">
+
+      <h2 style="font-size:21px;">
+        APK uploaded successfully
+      </h2>
+
+      <div class="file-info">
+        <strong>Name:</strong>
+        <span id="fileName"></span>
+        <br>
+
+        <strong>Size:</strong>
+        <span id="fileSize"></span>
+      </div>
+
+      <p style="margin-top:15px;">
+        Share this link:
+      </p>
+
+      <input
+        type="text"
+        id="shareLink"
+        readonly
+      >
+
+      <button
+        class="copy-btn"
+        onclick="copyLink()"
+      >
+        📋 Copy Shareable Link
+      </button>
+
+      <a
+        id="downloadLink"
+        class="download-btn"
+        target="_blank"
+      >
+        📥 Open Download Link
+      </a>
+
+    </div>
+
+  </div>
+
+</div>
+
+<footer>
+  APK SHARE © 2026
+</footer>
+
+
+<script>
+
+/* ==========================================
+   SUPABASE CONFIGURATION
+   ========================================== */
+
+const SUPABASE_URL = "TON_SUPABASE_URL";
+
+const SUPABASE_ANON_KEY =
+"TON_SUPABASE_ANON_KEY";
+
+
+const supabaseClient =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
+
+
+/* ==========================================
+   UPLOAD APK
+   ========================================== */
+
+async function uploadAPK(){
+
+  const fileInput =
+    document.getElementById("apkFile");
+
+  const uploadButton =
+    document.getElementById("uploadBtn");
+
+  const status =
+    document.getElementById("status");
+
+  const result =
+    document.getElementById("result");
+
+  const file =
+    fileInput.files[0];
+
+
+  result.style.display = "none";
+
+
+  if(!file){
+
+    showStatus(
+      "Please select an APK file.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  /* Check APK */
+
+  if(
+    !file.name.toLowerCase().endsWith(".apk")
+  ){
+
+    showStatus(
+      "Only APK files are allowed.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  uploadButton.disabled = true;
+
+  uploadButton.innerText =
+    "Uploading...";
+
+
+  showStatus(
+    "Uploading your APK...",
+    "success"
+  );
+
+
+  try{
+
+    /*
+      Create a unique filename
+      to avoid replacing another APK.
+    */
+
+    const random =
+      Math.random()
+      .toString(36)
+      .substring(2,10);
+
+    const safeName =
+      file.name
+      .replace(/[^a-zA-Z0-9._-]/g,"_");
+
+    const filePath =
+      Date.now() +
+      "_" +
+      random +
+      "_" +
+      safeName;
+
+
+    /* Upload */
+
+    const { data, error } =
+      await supabaseClient
+      .storage
+      .from("apk-files")
+      .upload(
+        filePath,
+        file,
+        {
+          cacheControl:"3600",
+          upsert:false,
+          contentType:
+            "application/vnd.android.package-archive"
+        }
+      );
+
+
+    if(error){
+      throw error;
+    }
+
+
+    /* Get public URL */
+
+    const { data:urlData } =
+      supabaseClient
+      .storage
+      .from("apk-files")
+      .getPublicUrl(filePath);
+
+
+    const publicURL =
+      urlData.publicUrl;
+
+
+    /* Show result */
+
+    document.getElementById("fileName")
+      .innerText = file.name;
+
+
+    document.getElementById("fileSize")
+      .innerText = formatSize(file.size);
+
+
+    document.getElementById("shareLink")
+      .value = publicURL;
+
+
+    document.getElementById("downloadLink")
+      .href = publicURL;
+
+
+    result.style.display = "block";
+
+
+    showStatus(
+      "APK uploaded successfully!",
+      "success"
+    );
+
+
+  }catch(error){
+
+    console.error(error);
+
+    showStatus(
+      "Upload error: " + error.message,
+      "error"
+    );
+
+  }
+
+
+  uploadButton.disabled = false;
+
+  uploadButton.innerText =
+    "Upload APK";
+}
+
+
+/* ==========================================
+   COPY LINK
+   ========================================== */
+
+async function copyLink(){
+
+  const link =
+    document.getElementById("shareLink").value;
+
+
+  try{
+
+    await navigator.clipboard.writeText(link);
+
+    showStatus(
+      "Shareable link copied!",
+      "success"
+    );
+
+  }catch(error){
+
+    const input =
+      document.getElementById("shareLink");
+
+    input.select();
+
+    document.execCommand("copy");
+
+    showStatus(
+      "Shareable link copied!",
+      "success"
+    );
+  }
+}
+
+
+/* ==========================================
+   FILE SIZE
+   ========================================== */
+
+function formatSize(bytes){
+
+  if(bytes === 0){
+    return "0 Bytes";
+  }
+
+  const sizes =
+    [
+      "Bytes",
+      "KB",
+      "MB",
+      "GB"
+    ];
+
+  const i =
+    Math.floor(
+      Math.log(bytes) /
+      Math.log(1024)
+    );
+
+  return (
+    parseFloat(
+      (bytes /
+      Math.pow(1024,i))
+      .toFixed(2)
+    )
+    +
+    " "
+    +
+    sizes[i]
+  );
+}
+
+
+/* ==========================================
+   STATUS MESSAGE
+   ========================================== */
+
+function showStatus(message,type){
+
+  const status =
+    document.getElementById("status");
+
+  status.innerText =
+    message;
+
+  status.className = type;
+
+  status.style.display =
+    "block";
+}
+
+</script>
+
+</body>
+</html>
